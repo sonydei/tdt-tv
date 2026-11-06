@@ -2,104 +2,98 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TDT Channels - Smart TV</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      background-color: #121212;
-      color: #ffffff;
-      font-family: Arial, Helvetica, sans-serif;
-      overflow: hidden;
-      width: 100vw;
-      height: 100vh;
-    }
-    #container {
+    /* Estilos fijos para evitar problemas de escala en navegadores de Smart TV antiguos */
+    html, body {
       width: 100%;
       height: 100%;
-      position: relative;
+      margin: 0;
+      padding: 0;
+      background-color: #0b0b0b;
+      color: #ffffff;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    #app {
+      width: 1280px;
+      height: 720px;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
     #sidebar {
-      width: 320px;
-      height: 100%;
-      float: left;
-      background-color: #1e1e1e;
-      border-right: 2px solid #333333;
-      overflow-y: auto;
+      width: 400px;
+      height: 720px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      background-color: #141414;
+      border-right: 2px solid #222;
+      overflow-y: scroll;
     }
     #main {
-      margin-left: 320px;
-      height: 100%;
+      width: 880px;
+      height: 720px;
+      position: absolute;
+      left: 400px;
+      top: 0;
       background-color: #000000;
-      position: relative;
     }
     .header {
-      padding: 15px;
-      background-color: #252525;
-      border-bottom: 1px solid #333333;
-    }
-    .header h2 {
-      font-size: 18px;
+      padding: 20px;
+      background-color: #1f1f1f;
+      font-size: 20px;
+      font-weight: bold;
       color: #00a8ff;
     }
-    #channel-list {
-      list-style: none;
-    }
     .channel-item {
-      padding: 14px 15px;
-      border-bottom: 1px solid #2a2a2a;
+      padding: 18px 20px;
+      border-bottom: 1px solid #222;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 18px;
       display: block;
-      color: #dddddd;
+      color: #ccc;
       text-decoration: none;
-      outline: none;
     }
     .channel-item:focus, .channel-item:hover {
       background-color: #00a8ff;
-      color: #ffffff;
+      color: #fff;
       font-weight: bold;
+      outline: none;
     }
     #video-player {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      background: #000;
     }
     #status-msg {
       position: absolute;
       top: 50%;
       left: 50%;
-      margin-top: -30px;
-      margin-left: -200px;
-      width: 400px;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      color: #888;
       text-align: center;
-      font-size: 16px;
-      color: #aaaaaa;
-      padding: 10px;
+      z-index: 10;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="container">
+  <div id="app">
     <div id="sidebar">
-      <div class="header">
-        <h2>Canales TDT</h2>
-      </div>
-      <ul id="channel-list"></ul>
+      <div class="header">Canales TDT</div>
+      <div id="channel-list"></div>
     </div>
     <div id="main">
-      <div id="status-msg">Cargando canales locales...</div>
+      <div id="status-msg">Selecciona un canal para reproducir</div>
       <video id="video-player" controls autoplay></video>
     </div>
   </div>
 
   <script>
-    // Apuntamos a un archivo tv.m3u que debe estar en el mismo repositorio de GitHub Pages
     var m3uUrl = 'tv.m3u';
     var video = document.getElementById('video-player');
     var statusMsg = document.getElementById('status-msg');
@@ -130,14 +124,16 @@
       return channels;
     }
 
-    function playStream(url) {
+    function playStream(url, name) {
       statusMsg.style.display = 'block';
-      statusMsg.innerText = 'Cargando señal del canal...';
+      statusMsg.innerText = 'Cargando ' + name + '...';
+
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
 
       if (Hls.isSupported()) {
-        if (hls) {
-          hls.destroy();
-        }
         hls = new Hls({ enableWorker: false });
         hls.loadSource(url);
         hls.attachMedia(video);
@@ -147,7 +143,7 @@
         });
         hls.on(Hls.Events.ERROR, function(event, data) {
           if (data.fatal) {
-            statusMsg.innerText = 'Error: Este canal emite con restricciones o está offline.';
+            statusMsg.innerText = 'Error: Este canal no es compatible o emite protegido.';
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -157,20 +153,14 @@
           video.play();
         });
       } else {
-        statusMsg.innerText = 'Tu navegador no soporta reproducción HLS.';
+        statusMsg.innerText = 'Reproducción HLS no soportada.';
       }
     }
 
     function renderChannels(channels) {
       channelListElem.innerHTML = '';
-      if (channels.length === 0) {
-        statusMsg.innerText = 'El archivo m3u está vacío o no tiene el formato correcto.';
-        return;
-      }
-
       for (var i = 0; i < channels.length; i++) {
         (function(channel) {
-          var li = document.createElement('li');
           var a = document.createElement('a');
           a.className = 'channel-item';
           a.innerText = channel.name;
@@ -178,36 +168,25 @@
           
           a.onclick = function(e) {
             e.preventDefault();
-            playStream(channel.url);
+            playStream(channel.url, channel.name);
           };
-
           a.onkeydown = function(e) {
             if (e.keyCode === 13) {
-              playStream(channel.url);
+              playStream(channel.url, channel.name);
             }
           };
-
-          li.appendChild(a);
-          channelListElem.appendChild(li);
+          channelListElem.appendChild(a);
         })(channels[i]);
       }
-      statusMsg.style.display = 'none';
     }
 
     var xhr = new XMLHttpRequest();
     xhr.open('GET', m3uUrl, true);
     xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4) {
-        if (xhr.status === 200) {
-          var channels = parseM3U(xhr.responseText);
-          renderChannels(channels);
-        } else {
-          statusMsg.innerText = 'No se encuentra el archivo tv.m3u en el repositorio (Error ' + xhr.status + ')';
-        }
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        var channels = parseM3U(xhr.responseText);
+        renderChannels(channels);
       }
-    };
-    xhr.onerror = function() {
-      statusMsg.innerText = 'Error de red al cargar tv.m3u.';
     };
     xhr.send();
   </script>
