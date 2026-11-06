@@ -21,14 +21,15 @@
       height: 100vh;
     }
     #sidebar {
-      width: 35%;
+      width: 450px;
       height: 100%;
       background-color: #141414;
-      border-right: 2px solid #222;
+      border-right: 2px solid #333;
       overflow-y: auto;
+      flex-shrink: 0;
     }
     #main {
-      width: 65%;
+      flex-grow: 1;
       height: 100%;
       background-color: #000000;
       position: relative;
@@ -37,19 +38,20 @@
       justify-content: center;
     }
     .header {
-      padding: 20px;
+      padding: 25px 20px;
       background-color: #1f1f1f;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: bold;
       color: #00a8ff;
+      border-bottom: 2px solid #333;
     }
     .channel-item {
-      padding: 16px 20px;
+      padding: 18px 20px;
       border-bottom: 1px solid #222;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 18px;
       display: block;
-      color: #ccc;
+      color: #ddd;
       text-decoration: none;
     }
     .channel-item:focus, .channel-item:hover {
@@ -66,11 +68,12 @@
     }
     #status-msg {
       position: absolute;
-      font-size: 18px;
-      color: #888;
+      font-size: 20px;
+      color: #aaa;
       text-align: center;
       z-index: 10;
       pointer-events: none;
+      padding: 20px;
     }
   </style>
 </head>
@@ -81,7 +84,7 @@
       <div id="channel-list"></div>
     </div>
     <div id="main">
-      <div id="status-msg">Selecciona un canal</div>
+      <div id="status-msg">Selecciona un canal de la lista</div>
       <video id="video-player" controls autoplay></video>
     </div>
   </div>
@@ -136,7 +139,7 @@
         });
         hls.on(Hls.Events.ERROR, function(event, data) {
           if (data.fatal) {
-            statusMsg.innerText = 'Canal no compatible o protegido.';
+            statusMsg.innerText = 'El canal "' + name + '" emite en un formato no compatible con esta Smart TV de 2017.';
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -146,7 +149,7 @@
           video.play();
         });
       } else {
-        statusMsg.innerText = 'HLS no soportado.';
+        statusMsg.innerText = 'Reproducción HLS no soportada.';
       }
     }
 
