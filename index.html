@@ -12,7 +12,7 @@
     #sidebar { width: 420px; height: 100%; background: #111; border-right: 2px solid #222; overflow-y: auto; flex-shrink: 0; }
     #player-container { flex-grow: 1; height: 100%; background: #000; position: relative; display: flex; align-items: center; justify-content: center; }
     .header { padding: 25px 20px; background: #1a1a1a; font-size: 22px; font-weight: bold; color: #00a8ff; border-bottom: 2px solid #222; }
-    .channel-btn { padding: 20px; border-bottom: 1px solid #1a1a1a; cursor: pointer; font-size: 18px; display: block; color: #ccc; background: none; width: 100%; text-align: left; border-left: none; border-right: none; border-top: none; }
+    .channel-btn { padding: 20px; border-bottom: 1px solid #1a1a1a; cursor: pointer; font-size: 18px; display: block; color: #ccc; background: none; width: 100%; text-align: left; border: none; }
     .channel-btn:focus, .channel-btn:hover { background: #00a8ff; color: #fff; outline: none; font-weight: bold; }
     video { width: 100%; height: 100%; object-fit: contain; }
     #status { position: absolute; font-size: 20px; color: #aaa; text-align: center; z-index: 10; pointer-events: none; padding: 20px; background: rgba(0,0,0,0.85); border-radius: 8px; }
@@ -21,11 +21,11 @@
 <body>
   <div id="app">
     <div id="sidebar">
-      <div class="header">Mis Canales IPTV</div>
+      <div class="header">Canales Compatibles</div>
       <div id="channels-list"></div>
     </div>
     <div id="player-container">
-      <div id="status">Selecciona un canal con el mando</div>
+      <div id="status">Selecciona un canal</div>
       <video id="video" controls autoplay></video>
     </div>
   </div>
@@ -36,42 +36,43 @@
     var listContainer = document.getElementById('channels-list');
     var hls = null;
 
-    // Lista de canales optimizados y estables
+    // Canales filtrados con flujos estables de baja complejidad para webOS
     var channels = [
       { name: "Toro TV", url: "https://stream.media-servers.es/torotv/hls/index.m3u8" },
       { name: "Telemadrid", url: "https://telemadrid-live.adaptive.level3.net/telemadrid/telemadrid.m3u8" },
-      { name: "Aragón TV", url: "https://aragontv-live.adaptive.level3.net/aragontv/aragontv.m3u8" },
-      { name: "24h RTVE", url: "https://rtvesecure-live.adaptive.level3.net/rtve/24h/index.m3u8" },
-      { name: "Europa Press", url: "https://europapress-live.hls.live-video.net/v1/p/ed281e01-50e5-4a57-b0b3-fdf441400bc0/master.m3u8" }
+      { name: "Aragón TV", url: "https://aragontv-live.adaptive.level3.net/aragontv/aragontv.m3u8" }
     ];
 
     function playChannel(url, name) {
       statusMsg.style.display = 'block';
-      statusMsg.innerText = 'Conectando con ' + name + '...';
+      statusMsg.innerText = 'Cargando ' + name + '...';
 
       if (hls) {
         hls.destroy();
         hls = null;
       }
 
-      // Usamos un proxy CORS abierto para evitar el bloqueo de red en la Smart TV
       var proxiedUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
 
       if (Hls.isSupported()) {
-        hls = new Hls({ enableWorker: false });
+        hls = new Hls({ 
+          enableWorker: false,
+          maxBufferLength: 15,
+          maxMaxBufferLength: 30
+        });
         hls.loadSource(proxiedUrl);
         hls.attachMedia(video);
         
         hls.on(Hls.Events.MANIFEST_PARSED, function() {
           statusMsg.style.display = 'none';
           video.play().catch(function(err) {
-            console.log("Autoplay evitado:", err);
+            console.log("Error al reproducir:", err);
           });
         });
 
         hls.on(Hls.Events.ERROR, function(event, data) {
           if (data.fatal) {
-            statusMsg.innerText = 'El canal ' + name + ' no responde o está offline.';
+            statusMsg.innerText = 'El códec de ' + name + ' no es compatible con esta TV.';
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -81,7 +82,7 @@
           video.play();
         });
       } else {
-        statusMsg.innerText = 'Reproducción no soportada en este navegador.';
+        statusMsg.innerText = 'Reproducción no soportada.';
       }
     }
 
