@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi TDT 3 Canales OLED</title>
-    <!-- Librería HLS para que el navegador antiguo de la LG pueda reproducir el vídeo -->
+    <title>Mi TDT Fija OLED</title>
+    <!-- Librería HLS esencial para forzar la reproducción en webOS de 2017 -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { 
@@ -70,17 +70,18 @@
 </head>
 <body>
 
-    <!-- IZQUIERDA: Zona de reproducción -->
+    <!-- IZQUIERDA: Zona del reproductor de vídeo -->
     <div class="reproductor-container">
         <video id="video-player" controls autoplay muted playsinline></video>
         <div id="nombre-canal-actual">Cargando...</div>
     </div>
 
-    <!-- DERECHA: Botonera fija con tus 3 canales principales -->
+    <!-- DERECHA: Botonera fija extraída de tu lista M3U -->
     <div class="lista-canales">
-        <button class="btn-canal" onclick="cambiarCanal('https://rtve.es', 'La 1')">La 1</button>
-        <button class="btn-canal" onclick="cambiarCanal('https://rtve.es', 'La 2')">La 2</button>
-        <button class="btn-canal" onclick="cambiarCanal('https://atresplayer.com', 'Antena 3')">Antena 3</button>
+        <button class="btn-canal" onclick="cambiarCanal('https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8', 'La 1')">La 1</button>
+        <button class="btn-canal" onclick="cambiarCanal('https://rtvelivestream.rtve.es/rtvesec/la2/la2_main_dvr.m3u8', 'La 2')">La 2</button>
+        <button class="btn-canal" onclick="cambiarCanal('https://streaming-1.eltorotv.com/lb0/eltorotv-streaming-web/index.m3u8', 'El Toro TV')">El Toro TV</button>
+        <button class="btn-canal" onclick="cambiarCanal('https://play.cdn.enetres.net/091DB7AFBD77442B9BA2F141DCC182F5021/021/playlist.m3u8', 'TRECE')">TRECE</button>
     </div>
 
     <script>
@@ -93,12 +94,6 @@
             
             if (hls) {
                 hls.destroy();
-            }
-
-            // Si es un enlace de Atresplayer (Antena 3), obligamos a abrir la web nativa oficial en lugar de hls.js
-            if (url.includes('atresplayer.com')) {
-                window.location.href = url;
-                return;
             }
 
             if (Hls.isSupported()) {
@@ -119,9 +114,9 @@
             }
         }
 
-        // Al iniciar la página cargamos La 1 de forma automática
+        // Cargamos automáticamente La 1 al iniciar la web
         window.onload = function() {
-            cambiarCanal('https://rtve.es', 'La 1');
+            cambiarCanal('https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8', 'La 1');
         };
     </script>
 </body>
