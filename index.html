@@ -3,109 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPTV Smart TV</title>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js"></script>
+  <title>TDT TV Ajustada</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body, html { width: 100%; height: 100%; background: #050505; color: #fff; font-family: sans-serif; overflow: hidden; }
-    #app { display: flex; width: 100vw; height: 100vh; }
-    #sidebar { width: 420px; height: 100%; background: #111; border-right: 2px solid #222; overflow-y: auto; flex-shrink: 0; }
-    #player-container { flex-grow: 1; height: 100%; background: #000; position: relative; display: flex; align-items: center; justify-content: center; }
-    .header { padding: 25px 20px; background: #1a1a1a; font-size: 22px; font-weight: bold; color: #00a8ff; border-bottom: 2px solid #222; }
-    .channel-btn { padding: 22px 20px; border-bottom: 1px solid #1a1a1a; cursor: pointer; font-size: 18px; display: block; color: #ddd; background: #141414; width: 100%; text-align: left; border-left: none; border-right: none; border-top: none; }
-    .channel-btn:focus, .channel-btn:hover { background: #00a8ff; color: #fff; outline: none; font-weight: bold; }
-    video { width: 100%; height: 100%; object-fit: contain; }
-    #status { position: absolute; font-size: 20px; color: #aaa; text-align: center; z-index: 10; pointer-events: none; padding: 20px; background: rgba(0,0,0,0.85); border-radius: 8px; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+      overflow: hidden;
+    }
+    /* Contenedor que estira y ajusta el reproductor oficial de TDTChannels a pantalla completa */
+    .video-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div id="sidebar">
-      <div class="header">Canales IPTV</div>
-      <div id="channels-list"></div>
-    </div>
-    <div id="player-container">
-      <div id="status">Selecciona un canal con el mando</div>
-      <video id="video" controls autoplay></video>
-    </div>
+  <div class="video-container">
+    <!-- Puedes cambiar la URL del iframe al canal que desees de TDTChannels -->
+    <iframe src="https://player.tdtchannels.com/television/La1" allowfullscreen></iframe>
   </div>
-
-  <script>
-    var video = document.getElementById('video');
-    var statusMsg = document.getElementById('status');
-    var listContainer = document.getElementById('channels-list');
-    var hls = null;
-
-    var channels = [
-      { name: "Toro TV", url: "https://stream.media-servers.es/torotv/hls/index.m3u8" },
-      { name: "Telemadrid", url: "https://telemadrid-live.adaptive.level3.net/telemadrid/telemadrid.m3u8" },
-      { name: "Aragón TV", url: "https://aragontv-live.adaptive.level3.net/aragontv/aragontv.m3u8" }
-    ];
-
-    function playChannel(url, name) {
-      statusMsg.style.display = 'block';
-      statusMsg.innerText = 'Cargando ' + name + '...';
-
-      if (hls) {
-        hls.destroy();
-        hls = null;
-      }
-
-      var proxiedUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-
-      if (Hls.isSupported()) {
-        hls = new Hls({ enableWorker: false });
-        hls.loadSource(proxiedUrl);
-        hls.attachMedia(video);
-        
-        hls.on(Hls.Events.MANIFEST_PARSED, function() {
-          statusMsg.style.display = 'none';
-          video.play().catch(function(err) {
-            console.log("Error play:", err);
-          });
-        });
-
-        hls.on(Hls.Events.ERROR, function(event, data) {
-          if (data.fatal) {
-            statusMsg.innerText = 'Error al reproducir ' + name;
-          }
-        });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = proxiedUrl;
-        video.addEventListener('loadedmetadata', function() {
-          statusMsg.style.display = 'none';
-          video.play();
-        });
-      } else {
-        statusMsg.innerText = 'HLS no soportado.';
-      }
-    }
-
-    function init() {
-      for (var i = 0; i < channels.length; i++) {
-        var ch = channels[i];
-        var btn = document.createElement('button');
-        btn.className = 'channel-btn';
-        btn.innerText = ch.name;
-        btn.setAttribute('tabindex', '0');
-        
-        // Usamos closures seguras para los eventos de clic y enter del mando
-        (function(u, n) {
-          btn.addEventListener('click', function() {
-            playChannel(u, n);
-          });
-          btn.addEventListener('keydown', function(e) {
-            if (e.keyCode === 13 || e.keyCode === 32) {
-              playChannel(u, n);
-            }
-          });
-        })(ch.url, ch.name);
-
-        listContainer.appendChild(btn);
-      }
-    }
-
-    init();
-  </script>
 </body>
 </html>
