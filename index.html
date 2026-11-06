@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TDT Channels - Smart TV</title>
+  <title>TDT Web TV</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%;
       height: 100%;
-      background-color: #000000;
+      background-color: #050505;
       color: #ffffff;
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       overflow: hidden;
     }
     #app {
@@ -23,8 +23,8 @@
     #sidebar {
       width: 450px;
       height: 100%;
-      background-color: #141414;
-      border-right: 2px solid #333;
+      background-color: #111111;
+      border-right: 2px solid #222;
       overflow-y: auto;
       flex-shrink: 0;
     }
@@ -39,19 +39,19 @@
     }
     .header {
       padding: 25px 20px;
-      background-color: #1f1f1f;
+      background-color: #1a1a1a;
       font-size: 22px;
       font-weight: bold;
       color: #00a8ff;
-      border-bottom: 2px solid #333;
+      border-bottom: 2px solid #222;
     }
     .channel-item {
       padding: 18px 20px;
-      border-bottom: 1px solid #222;
+      border-bottom: 1px solid #1a1a1a;
       cursor: pointer;
       font-size: 18px;
       display: block;
-      color: #ddd;
+      color: #ccc;
       text-decoration: none;
     }
     .channel-item:focus, .channel-item:hover {
@@ -69,7 +69,7 @@
     #status-msg {
       position: absolute;
       font-size: 20px;
-      color: #aaa;
+      color: #777;
       text-align: center;
       z-index: 10;
       pointer-events: none;
@@ -84,45 +84,29 @@
       <div id="channel-list"></div>
     </div>
     <div id="main">
-      <div id="status-msg">Selecciona un canal de la lista</div>
+      <div id="status-msg">Selecciona un canal para comenzar</div>
       <video id="video-player" controls autoplay></video>
     </div>
   </div>
 
   <script>
-    var m3uUrl = 'tv.m3u';
     var video = document.getElementById('video-player');
     var statusMsg = document.getElementById('status-msg');
     var channelListElem = document.getElementById('channel-list');
     var hls = null;
 
-    function parseM3U(content) {
-      var lines = content.split('\n');
-      var channels = [];
-      var currentName = '';
-
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
-        if (line.indexOf('#EXTINF:') === 0) {
-          var commaIndex = line.lastIndexOf(',');
-          if (commaIndex !== -1) {
-            currentName = line.substring(commaIndex + 1).trim();
-          } else {
-            currentName = 'Canal sin nombre';
-          }
-        } else if (line.length > 0 && line.indexOf('#') !== 0) {
-          if (currentName !== '') {
-            channels.push({ name: currentName, url: line });
-            currentName = '';
-          }
-        }
-      }
-      return channels;
-    }
+    // Lista embebida directa para evitar problemas de carga externa CORS en webOS
+    var channels = [
+      { name: "Toro TV", url: "https://stream.media-servers.es/torotv/hls/index.m3u8" },
+      { name: "Telemadrid", url: "https://telemadrid-live.adaptive.level3.net/telemadrid/telemadrid.m3u8" },
+      { name: "Aragon TV", url: "https://aragontv-live.adaptive.level3.net/aragontv/aragontv.m3u8" },
+      { name: "24h RTVE", url: "https://rtvesecure-live.adaptive.level3.net/rtve/24h/index.m3u8" },
+      { name: "Europa Press", url: "https://europapress-live.hls.live-video.net/v1/p/ed281e01-50e5-4a57-b0b3-fdf441400bc0/master.m3u8" }
+    ];
 
     function playStream(url, name) {
       statusMsg.style.display = 'block';
-      statusMsg.innerText = 'Cargando ' + name + '...';
+      statusMsg.innerText = 'Conectando con ' + name + '...';
 
       if (hls) {
         hls.destroy();
@@ -130,16 +114,40 @@
       }
 
       if (Hls.isSupported()) {
-        hls = new Hls({ enableWorker: false });
+        hls = new Hls({
+          enableWorker: false,
+          lowLatencyMode: true,
+          backBufferLength: 90
+        });
         hls.loadSource(url);
         hls.attachMedia(video);
+        
         hls.on(Hls.Events.MANIFEST_PARSED, function() {
           statusMsg.style.display = 'none';
-          video.play();
+          var playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(function(error) {
+              console.log("Autoplay bloqueado:", error);
+            });
+          }
         });
+
         hls.on(Hls.Events.ERROR, function(event, data) {
           if (data.fatal) {
-            statusMsg.innerText = 'El canal "' + name + '" emite en un formato no compatible con esta Smart TV de 2017.';
+            switch(data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                statusMsg.innerText = 'Error de red o CORS en ' + name;
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                statusMsg.innerText = 'Error de decodificación en ' + name;
+                hls.recoverMediaError();
+                break;
+              default:
+                statusMsg.innerText = 'Formato no compatible en esta TV';
+                hls.destroy();
+                break;
+            }
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -149,11 +157,11 @@
           video.play();
         });
       } else {
-        statusMsg.innerText = 'Reproducción HLS no soportada.';
+        statusMsg.innerText = 'El navegador no soporta HLS.';
       }
     }
 
-    function renderChannels(channels) {
+    function renderChannels() {
       channelListElem.innerHTML = '';
       for (var i = 0; i < channels.length; i++) {
         (function(channel) {
@@ -176,15 +184,7 @@
       }
     }
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', m3uUrl, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        var channels = parseM3U(xhr.responseText);
-        renderChannels(channels);
-      }
-    };
-    xhr.send();
+    renderChannels();
   </script>
 </body>
 </html>
