@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TDT Channels - Smart TV</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    #sidebar {
+      width: 320px;
+      height: 100%;
+      float: left;
+      background-color: #1e1e1e;
+      border-right: 2px solid #333333;
+      overflow-y: auto;
+    }
+    #main {
+      margin-left: 320px;
+      height: 100%;
+      background-color: #000000;
+      position: relative;
+    }
+    .header {
+      padding: 15px;
+      background-color: #252525;
+      border-bottom: 1px solid #333333;
+    }
+    .header h2 {
+      font-size: 18px;
+      color: #00a8ff;
+    }
+    #channel-list {
+      list-style: none;
+    }
+    .channel-item {
+      padding: 14px 15px;
+      border-bottom: 1px solid #2a2a2a;
+      cursor: pointer;
+      font-size: 16px;
+      display: block;
+      color: #dddddd;
+      text-decoration: none;
+      outline: none;
+    }
+    .channel-item:focus, .channel-item:hover {
+      background-color: #00a8ff;
+      color: #ffffff;
+      font-weight: bold;
+    }
+    #video-player {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    #status-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-top: -30px;
+      margin-left: -200px;
+      width: 400px;
+      text-align: center;
+      font-size: 16px;
+      color: #aaaaaa;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="sidebar">
+      <div class="header">
+        <h2>Canales TDT</h2>
+      </div>
+      <ul id="channel-list"></ul>
+    </div>
+    <div id="main">
+      <div id="status-msg">Cargando canales locales...</div>
+      <video id="video-player" controls autoplay></video>
+    </div>
+  </div>
+
+  <script>
+    // Apuntamos a un archivo tv.m3u que debe estar en el mismo repositorio de GitHub Pages
+    var m3uUrl = 'tv.m3u';
+    var video = document.getElementById('video-player');
+    var statusMsg = document.getElementById('status-msg');
+    var channelListElem = document.getElementById('channel-list');
+    var hls = null;
+
+    function parseM3U(content) {
+      var lines = content.split('\n');
+      var channels = [];
+      var currentName = '';
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.indexOf('#EXTINF:') === 0) {
+          var commaIndex = line.lastIndexOf(',');
+          if (commaIndex !== -1) {
+            currentName = line.substring(commaIndex + 1).trim();
+          } else {
+            currentName = 'Canal sin nombre';
+          }
+        } else if (line.length > 0 && line.indexOf('#') !== 0) {
+          if (currentName !== '') {
+            channels.push({ name: currentName, url: line });
+            currentName = '';
+          }
+        }
+      }
+      return channels;
+    }
+
+    function playStream(url) {
+      statusMsg.style.display = 'block';
+      statusMsg.innerText = 'Cargando señal del canal...';
+
+      if (Hls.isSupported()) {
+        if (hls) {
+          hls.destroy();
+        }
+        hls = new Hls({ enableWorker: false });
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          statusMsg.style.display = 'none';
+          video.play();
+        });
+        hls.on(Hls.Events.ERROR, function(event, data) {
+          if (data.fatal) {
+            statusMsg.innerText = 'Error: Este canal emite con restricciones o está offline.';
+          }
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.addEventListener('loadedmetadata', function() {
+          statusMsg.style.display = 'none';
+          video.play();
+        });
+      } else {
+        statusMsg.innerText = 'Tu navegador no soporta reproducción HLS.';
+      }
+    }
+
+    function renderChannels(channels) {
+      channelListElem.innerHTML = '';
+      if (channels.length === 0) {
+        statusMsg.innerText = 'El archivo m3u está vacío o no tiene el formato correcto.';
+        return;
+      }
+
+      for (var i = 0; i < channels.length; i++) {
+        (function(channel) {
+          var li = document.createElement('li');
+          var a = document.createElement('a');
+          a.className = 'channel-item';
+          a.innerText = channel.name;
+          a.setAttribute('tabindex', '0');
+          
+          a.onclick = function(e) {
+            e.preventDefault();
+            playStream(channel.url);
+          };
+
+          a.onkeydown = function(e) {
+            if (e.keyCode === 13) {
+              playStream(channel.url);
+            }
+          };
+
+          li.appendChild(a);
+          channelListElem.appendChild(li);
+        })(channels[i]);
+      }
+      statusMsg.style.display = 'none';
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', m3uUrl, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) {
+          var channels = parseM3U(xhr.responseText);
+          renderChannels(channels);
+        } else {
+          statusMsg.innerText = 'No se encuentra el archivo tv.m3u en el repositorio (Error ' + xhr.status + ')';
+        }
+      }
+    };
+    xhr.onerror = function() {
+      statusMsg.innerText = 'Error de red al cargar tv.m3u.';
+    };
+    xhr.send();
+  </script>
+</body>
+</html>
