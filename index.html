@@ -2,44 +2,39 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TDT Channels - Smart TV</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js"></script>
   <style>
-    /* Estilos fijos para evitar problemas de escala en navegadores de Smart TV antiguos */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%;
       height: 100%;
-      margin: 0;
-      padding: 0;
-      background-color: #0b0b0b;
+      background-color: #000000;
       color: #ffffff;
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
       overflow: hidden;
     }
     #app {
-      width: 1280px;
-      height: 720px;
-      position: absolute;
-      top: 0;
-      left: 0;
+      display: flex;
+      width: 100vw;
+      height: 100vh;
     }
     #sidebar {
-      width: 400px;
-      height: 720px;
-      position: absolute;
-      left: 0;
-      top: 0;
+      width: 35%;
+      height: 100%;
       background-color: #141414;
       border-right: 2px solid #222;
-      overflow-y: scroll;
+      overflow-y: auto;
     }
     #main {
-      width: 880px;
-      height: 720px;
-      position: absolute;
-      left: 400px;
-      top: 0;
+      width: 65%;
+      height: 100%;
       background-color: #000000;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .header {
       padding: 20px;
@@ -49,10 +44,10 @@
       color: #00a8ff;
     }
     .channel-item {
-      padding: 18px 20px;
+      padding: 16px 20px;
       border-bottom: 1px solid #222;
       cursor: pointer;
-      font-size: 18px;
+      font-size: 16px;
       display: block;
       color: #ccc;
       text-decoration: none;
@@ -66,14 +61,12 @@
     #video-player {
       width: 100%;
       height: 100%;
+      object-fit: contain;
       background: #000;
     }
     #status-msg {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 20px;
+      font-size: 18px;
       color: #888;
       text-align: center;
       z-index: 10;
@@ -88,7 +81,7 @@
       <div id="channel-list"></div>
     </div>
     <div id="main">
-      <div id="status-msg">Selecciona un canal para reproducir</div>
+      <div id="status-msg">Selecciona un canal</div>
       <video id="video-player" controls autoplay></video>
     </div>
   </div>
@@ -143,7 +136,7 @@
         });
         hls.on(Hls.Events.ERROR, function(event, data) {
           if (data.fatal) {
-            statusMsg.innerText = 'Error: Este canal no es compatible o emite protegido.';
+            statusMsg.innerText = 'Canal no compatible o protegido.';
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -153,7 +146,7 @@
           video.play();
         });
       } else {
-        statusMsg.innerText = 'Reproducción HLS no soportada.';
+        statusMsg.innerText = 'HLS no soportado.';
       }
     }
 
