@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi TDT Automática OLED</title>
+    <title>Mi TDT 3 Canales OLED</title>
+    <!-- Librería HLS para que el navegador antiguo de la LG pueda reproducir el vídeo -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { 
@@ -45,15 +46,16 @@
             flex-direction: column;
             gap: 15px;
             max-height: 90vh;
+            justify-content: center;
         }
         .btn-canal { 
             background: #1c1c1e; 
             color: #ffffff; 
-            border: 3px solid #2c2c2e;
-            padding: 20px;
-            font-size: 2rem; 
+            border: 4px solid #2c2c2e;
+            padding: 25px;
+            font-size: 2.2rem; 
             font-weight: bold; 
-            border-radius: 12px; 
+            border-radius: 16px; 
             cursor: pointer;
             text-align: center;
             transition: all 0.15s ease;
@@ -62,86 +64,41 @@
             background: #ff4500; 
             border-color: #ffffff; 
             outline: none;
-        }
-        #estado-carga {
-            font-size: 2rem;
-            color: #86868b;
-            text-align: center;
-            margin-top: 50px;
+            transform: scale(1.03);
         }
     </style>
 </head>
 <body>
 
+    <!-- IZQUIERDA: Zona de reproducción -->
     <div class="reproductor-container">
         <video id="video-player" controls autoplay muted playsinline></video>
-        <div id="nombre-canal-actual">Cargando lista...</div>
+        <div id="nombre-canal-actual">Cargando...</div>
     </div>
 
-    <div class="lista-canales" id="contenedor-canales">
-        <div id="estado-carga">Conectando con el repositorio de TDTChannels...</div>
+    <!-- DERECHA: Botonera fija con tus 3 canales principales -->
+    <div class="lista-canales">
+        <button class="btn-canal" onclick="cambiarCanal('https://rtve.es', 'La 1')">La 1</button>
+        <button class="btn-canal" onclick="cambiarCanal('https://rtve.es', 'La 2')">La 2</button>
+        <button class="btn-canal" onclick="cambiarCanal('https://atresplayer.com', 'Antena 3')">Antena 3</button>
     </div>
 
     <script>
         var video = document.getElementById('video-player');
         var titulo = document.getElementById('nombre-canal-actual');
-        var contenedor = document.getElementById('contenedor-canales');
         var hls = null;
-
-        // SOLUCIÓN DEFINITIVA: Leemos el archivo clonado directamente desde el GitHub original de la comunidad
-        var urlListaM3U8 = "https://githubusercontent.com";
-
-        fetch(urlListaM3U8)
-            .then(response => {
-                if (!response.ok) throw new Error("Error de conexión");
-                return response.text();
-            })
-            .then(data => {
-                parsearM3U8(data);
-            })
-            .catch(error => {
-                document.getElementById('estado-carga').innerText = "Error al descargar los canales. Inténtalo de nuevo.";
-                console.error(error);
-            });
-
-        function parsearM3U8(contenidoM3U8) {
-            contenedor.innerHTML = "";
-            var lineas = contenidoM3U8.split('\n');
-            var nombreCanal = "";
-            var primerCanalAsignado = false;
-
-            for (var i = 0; i < lineas.length; i++) {
-                var linea = lineas[i].trim();
-
-                if (linea.startsWith('#EXTINF:')) {
-                    var partes = linea.split(',');
-                    nombreCanal = partes[partes.length - 1].trim();
-                } 
-                else if (linea.startsWith('http') && nombreCanal !== "") {
-                    var urlCanal = linea;
-
-                    var boton = document.createElement('button');
-                    boton.className = 'btn-canal';
-                    boton.innerText = nombreCanal;
-                    
-                    boton.setAttribute('onclick', `cambiarCanal('${urlCanal}', '${nombreCanal.replace(/'/g, "\\'")}')`);
-                    contenedor.appendChild(boton);
-
-                    if (!primerCanalAsignado) {
-                        cambiarCanal(urlCanal, nombreCanal);
-                        primerCanalAsignado = true;
-                    }
-
-                    nombreCanal = "";
-                }
-            }
-        }
 
         function cambiarCanal(url, nombre) {
             titulo.innerText = "Cargando " + nombre + "...";
             
             if (hls) {
                 hls.destroy();
+            }
+
+            // Si es un enlace de Atresplayer (Antena 3), obligamos a abrir la web nativa oficial en lugar de hls.js
+            if (url.includes('atresplayer.com')) {
+                window.location.href = url;
+                return;
             }
 
             if (Hls.isSupported()) {
@@ -161,6 +118,11 @@
                 });
             }
         }
+
+        // Al iniciar la página cargamos La 1 de forma automática
+        window.onload = function() {
+            cambiarCanal('https://rtve.es', 'La 1');
+        };
     </script>
 </body>
 </html>
