@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi TDT Automática OLED</title>
-    <!-- Librería HLS para asegurar que la TV LG de 2017 descodifique el vídeo -->
     <script src="https://jsdelivr.net"></script>
     <style>
-        /* Diseño oscuro optimizado para paneles OLED y puntero Magic Remote */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             background-color: #000000; 
@@ -18,7 +16,6 @@
             flex-direction: row;
             height: 95vh;
         }
-        /* Zona izquierda: Reproductor */
         .reproductor-container {
             flex: 1.8;
             display: flex;
@@ -40,7 +37,6 @@
             color: #ff4500;
             font-weight: bold;
         }
-        /* Zona derecha: Lista de canales */
         .lista-canales { 
             flex: 1.2;
             overflow-y: auto;
@@ -83,7 +79,7 @@
     </div>
 
     <div class="lista-canales" id="contenedor-canales">
-        <div id="estado-carga">Leyendo canales desde lista m3u8...</div>
+        <div id="estado-carga">Conectando con el repositorio de TDTChannels...</div>
     </div>
 
     <script>
@@ -92,20 +88,19 @@
         var contenedor = document.getElementById('contenedor-canales');
         var hls = null;
 
-        // Se lee directamente tu dirección mediante el puente comunitario de AllOrigins
-        var urlOriginal = "https://www.tdtchannels.com/lists/tv.m3u8";
-        var urlListaM3U8 = "https://allorigins.win" + encodeURIComponent(urlOriginal);
+        // SOLUCIÓN DEFINITIVA: Leemos el archivo clonado directamente desde el GitHub original de la comunidad
+        var urlListaM3U8 = "https://githubusercontent.com";
 
         fetch(urlListaM3U8)
             .then(response => {
-                if (!response.ok) throw new Error("Error al conectar con la lista");
+                if (!response.ok) throw new Error("Error de conexión");
                 return response.text();
             })
             .then(data => {
                 parsearM3U8(data);
             })
             .catch(error => {
-                document.getElementById('estado-carga').innerText = "Fallo de conexión. Recuerda abrirlo desde tu enlace de GitHub Pages en HTTPS.";
+                document.getElementById('estado-carga').innerText = "Error al descargar los canales. Inténtalo de nuevo.";
                 console.error(error);
             });
 
@@ -118,12 +113,10 @@
             for (var i = 0; i < lineas.length; i++) {
                 var linea = lineas[i].trim();
 
-                // Detectamos la etiqueta informativa del canal
                 if (linea.startsWith('#EXTINF:')) {
                     var partes = linea.split(',');
                     nombreCanal = partes[partes.length - 1].trim();
                 } 
-                // La línea siguiente que comience por HTTP será el streaming directo del vídeo
                 else if (linea.startsWith('http') && nombreCanal !== "") {
                     var urlCanal = linea;
 
@@ -131,11 +124,9 @@
                     boton.className = 'btn-canal';
                     boton.innerText = nombreCanal;
                     
-                    // Asignamos la acción de click escapando posibles caracteres extraños en los nombres
                     boton.setAttribute('onclick', `cambiarCanal('${urlCanal}', '${nombreCanal.replace(/'/g, "\\'")}')`);
                     contenedor.appendChild(boton);
 
-                    // Sintonizamos el primer canal de la lista al arrancar
                     if (!primerCanalAsignado) {
                         cambiarCanal(urlCanal, nombreCanal);
                         primerCanalAsignado = true;
