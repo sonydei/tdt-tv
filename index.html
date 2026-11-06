@@ -3,121 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi TDT Fija OLED</title>
-    <!-- Librería HLS esencial para forzar la reproducción en webOS de 2017 -->
-    <script src="https://jsdelivr.net"></script>
+    <title>Mi TDT Directa LG</title>
     <style>
+        /* Optimizado al 100% para pantallas OLED (Negro Puro) y mando de la TV */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             background-color: #000000; 
             color: #ffffff; 
+            text-align: center; 
             margin: 0; 
-            padding: 20px;
-            display: flex;
-            flex-direction: row;
-            height: 95vh;
+            padding: 40px 20px;
         }
-        .reproductor-container {
-            flex: 1.8;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
+        h1 { 
+            font-size: 3.5rem; 
+            margin-bottom: 5px; 
+            color: #f5f5f7;
         }
-        video {
-            width: 100%;
-            max-height: 80%;
-            background: #111;
-            border: 4px solid #333;
-            border-radius: 12px;
-        }
-        #nombre-canal-actual {
-            font-size: 2.5rem;
-            margin-top: 15px;
+        p {
+            font-size: 1.6rem;
             color: #ff4500;
+            margin-bottom: 50px;
             font-weight: bold;
         }
-        .lista-canales { 
-            flex: 1.2;
-            overflow-y: auto;
-            padding: 10px;
+        .contenedor-botones { 
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            max-height: 90vh;
-            justify-content: center;
+            gap: 25px;
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 0 20px;
         }
         .btn-canal { 
-            background: #1c1c1e; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 110px;
+            background: #121212; 
             color: #ffffff; 
-            border: 4px solid #2c2c2e;
-            padding: 25px;
-            font-size: 2.2rem; 
+            text-decoration: none; 
+            font-size: 2.6rem; 
             font-weight: bold; 
-            border-radius: 16px; 
-            cursor: pointer;
-            text-align: center;
+            border-radius: 20px; 
+            border: 4px solid #2c2c2e;
             transition: all 0.15s ease;
+            cursor: pointer;
         }
+        /* Efecto de resalte de color naranja cuando pasas el puntero del mando */
         .btn-canal:hover, .btn-canal:focus { 
             background: #ff4500; 
             border-color: #ffffff; 
+            transform: scale(1.04);
+            box-shadow: 0 0 25px rgba(255, 69, 0, 0.6);
             outline: none;
-            transform: scale(1.03);
         }
     </style>
 </head>
 <body>
 
-    <!-- IZQUIERDA: Zona del reproductor de vídeo -->
-    <div class="reproductor-container">
-        <video id="video-player" controls autoplay muted playsinline></video>
-        <div id="nombre-canal-actual">Cargando...</div>
+    <h1>Mi TDT Directa</h1>
+    <p>Pulsa un canal para abrir el reproductor nativo de tu TV</p>
+
+    <div class="contenedor-botones">
+        <!-- Al hacer clic, webOS intercepta el .m3u8 y abre el canal a pantalla completa -->
+        <a class="btn-canal" href="https://rtve.es">La 1</a>
+        <a class="btn-canal" href="https://rtve.es">La 2</a>
+        <a class="btn-canal" href="https://eltorotv.com">El Toro TV</a>
+        <a class="btn-canal" href="https://enetres.net">TRECE</a>
     </div>
 
-    <!-- DERECHA: Botonera fija extraída de tu lista M3U -->
-    <div class="lista-canales">
-        <button class="btn-canal" onclick="cambiarCanal('https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8', 'La 1')">La 1</button>
-        <button class="btn-canal" onclick="cambiarCanal('https://rtvelivestream.rtve.es/rtvesec/la2/la2_main_dvr.m3u8', 'La 2')">La 2</button>
-        <button class="btn-canal" onclick="cambiarCanal('https://streaming-1.eltorotv.com/lb0/eltorotv-streaming-web/index.m3u8', 'El Toro TV')">El Toro TV</button>
-        <button class="btn-canal" onclick="cambiarCanal('https://play.cdn.enetres.net/091DB7AFBD77442B9BA2F141DCC182F5021/021/playlist.m3u8', 'TRECE')">TRECE</button>
-    </div>
-
-    <script>
-        var video = document.getElementById('video-player');
-        var titulo = document.getElementById('nombre-canal-actual');
-        var hls = null;
-
-        function cambiarCanal(url, nombre) {
-            titulo.innerText = "Cargando " + nombre + "...";
-            
-            if (hls) {
-                hls.destroy();
-            }
-
-            if (Hls.isSupported()) {
-                hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play();
-                    titulo.innerText = nombre;
-                });
-            } 
-            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-                video.addEventListener('loadedmetadata', function() {
-                    video.play();
-                    titulo.innerText = nombre;
-                });
-            }
-        }
-
-        // Cargamos automáticamente La 1 al iniciar la web
-        window.onload = function() {
-            cambiarCanal('https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8', 'La 1');
-        };
-    </script>
 </body>
 </html>
